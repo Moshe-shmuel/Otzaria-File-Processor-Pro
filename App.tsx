@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import JSZip from 'jszip';
 import { 
@@ -111,7 +110,8 @@ const App: React.FC = () => {
   const applyMerge = () => {
     pushToHistory();
     let totalMerged = 0;
-    setLoadedFiles(prev => prev.map(f => {
+    
+    const nextFiles = loadedFiles.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
       let currentSourceText = "";
@@ -139,7 +139,9 @@ const App: React.FC = () => {
       });
       
       return { ...f, content: doc.body.innerHTML };
-    }));
+    });
+
+    setLoadedFiles(nextFiles);
     addLog(`חיבור כותרות בוצע. סה"כ חוברו ${totalMerged} כותרות מקור (${mergeSrc}) ליעדים (${mergeTarget}).`, 'success');
   };
 
@@ -150,7 +152,7 @@ const App: React.FC = () => {
     let totalReplacements = 0;
     let filesAffected = 0;
 
-    setLoadedFiles(prev => prev.map(f => {
+    const nextFiles = loadedFiles.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
       let changedInFile = false;
@@ -167,7 +169,9 @@ const App: React.FC = () => {
       });
       if (changedInFile) filesAffected++;
       return { ...f, content: doc.body.innerHTML };
-    }));
+    });
+
+    setLoadedFiles(nextFiles);
     addLog(`החלפה גלובלית בוצעה. הוחלפו ${totalReplacements} מופעים ב-${filesAffected} קבצים.`, 'success');
   };
 
@@ -272,7 +276,6 @@ const App: React.FC = () => {
         if (splitCountForThisFile > 1) originalFilesAffected++;
       });
     } else {
-      // Split by text pattern
       loadedFiles.forEach((f, fIdx) => {
         const fileInstructions = headerInstructions.filter(ins => ins.id.startsWith(`${fIdx}-`) && ins.shouldSplit);
         if (fileInstructions.length === 0) {
@@ -311,7 +314,7 @@ const App: React.FC = () => {
     const regex = new RegExp(repFind, 'g');
     let totalUpdated = 0;
     
-    setLoadedFiles(prev => prev.map(f => {
+    const nextFiles = loadedFiles.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
       const selector = repScope === 'all' ? 'h1,h2,h3,h4,h5,h6' : repScope;
@@ -322,7 +325,9 @@ const App: React.FC = () => {
         }
       });
       return { ...f, content: doc.body.innerHTML };
-    }));
+    });
+
+    setLoadedFiles(nextFiles);
     addLog(`החלפה בכותרות הושלמה. עודכנו ${totalUpdated} כותרות בטווח ${repScope}.`, 'success');
   };
 
@@ -331,7 +336,7 @@ const App: React.FC = () => {
     const skipTags = Object.entries(hierSkip).filter(([_, v]) => v).map(([k]) => k);
     let totalFilesNormalized = 0;
 
-    setLoadedFiles(prev => prev.map(f => {
+    const nextFiles = loadedFiles.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
       const headers = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'));
@@ -358,7 +363,9 @@ const App: React.FC = () => {
       });
       if (changedInThisFile) totalFilesNormalized++;
       return { ...f, content: doc.body.innerHTML };
-    }));
+    });
+
+    setLoadedFiles(nextFiles);
     addLog(`נירמול היררכיה בוצע ב-${totalFilesNormalized} קבצים. רמות שהוחרגו: ${skipTags.length > 0 ? skipTags.join(', ') : 'ללא'}.`, 'success');
   };
 
@@ -410,7 +417,6 @@ const App: React.FC = () => {
         onChange={(e) => handleFiles(e.target.files)} 
       />
 
-      {/* Sidebar */}
       <aside className={`bg-white border-l border-slate-200 transition-all duration-300 flex flex-col ${isSidebarOpen ? 'w-72' : 'w-0 overflow-hidden'}`}>
         <div className="p-6 border-b border-slate-100 flex items-center gap-2">
           <div className="p-2 bg-blue-600 rounded-lg text-white">
@@ -429,11 +435,10 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-           <div className="text-xs text-slate-400 text-center">v2.4 - Enhanced Logs</div>
+           <div className="text-xs text-slate-400 text-center">v2.4.1 - Corrected Log Counting</div>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-4">
@@ -808,7 +813,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Bar (Sticky Footer) */}
         <footer className="bg-white border-t border-slate-200 px-8 py-6 flex items-center gap-8 fixed bottom-0 left-0 right-0 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]" style={{ right: isSidebarOpen ? '288px' : '0' }}>
           <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 h-20 overflow-y-auto">
             {logs.length === 0 ? (
