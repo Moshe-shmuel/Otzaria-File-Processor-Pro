@@ -422,11 +422,11 @@ const App: React.FC = () => {
           <div className="p-2 bg-blue-600 rounded-lg text-white">
             <Wrench size={24} />
           </div>
-          <h1 className="text-xl font-bold text-slate-800">מעבד Otzaria</h1>
+          <h1 className="text-xl font-bold text-slate-800">מעבד קבצים מתקדם</h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          <NavButton id="process" icon={Wrench} label="חיבור כותרות (Merge)" />
+          <NavButton id="process" icon={Wrench} label="חיבור כותרות" />
           <NavButton id="replace" icon={Search} label="החלפה בכותרות" />
           <NavButton id="global" icon={Globe} label="החלפה גלובלית" />
           <NavButton id="split" icon={Scissors} label="חיתוך מסמך" />
@@ -641,14 +641,14 @@ const App: React.FC = () => {
                         <input type="text" value={splitAuthor} onChange={e => setSplitAuthor(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">(שם הספר להוספה (בתחילת שם הקובץ:</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">שם הספר להוספה (בתחילת שם הקובץ):</label>
                         <input type="text" value={splitBookName} onChange={e => setSplitBookName(e.target.value)} placeholder="לדוגמה: יד דוד על..." className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                     </div>
                     
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                       <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <AlertCircle size={14} /> סנן והחרג אם מכיל...):
+                        <AlertCircle size={14} /> סנן והחרג אם מכיל...:
                       </label>
                       <input 
                         type="text" 
