@@ -501,17 +501,17 @@ const App: React.FC = () => {
             {activeTab === 'process' && (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-300">
                 <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
-                  <Wrench className="text-blue-500" /> חיבור כותרות (Merge)
+                  <Wrench className="text-blue-500" /> חיבור כותרות
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">מקור (Tag to Merge):</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">מקור:</label>
                     <select value={mergeSrc} onChange={e => setMergeSrc(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                       {['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].map(h => <option key={h} value={h}>{h.toUpperCase()}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">יעד (Target Header):</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">יעד:</label>
                     <select value={mergeTarget} onChange={e => setMergeTarget(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                       {['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].map(h => <option key={h} value={h}>{h.toUpperCase()}</option>)}
                     </select>
@@ -612,7 +612,7 @@ const App: React.FC = () => {
                       
                       {splitMethod !== 'text_pattern' && (
                         <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">תגית כותרת (Tag):</label>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">תגית כותרת:</label>
                           <select value={splitTag} onChange={e => setSplitTag(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                             {['h1', 'h2', 'h3', 'h4'].map(h => <option key={h} value={h}>{h.toUpperCase()}</option>)}
                           </select>
@@ -637,18 +637,18 @@ const App: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">שם המחבר להוספה (ברירת מחדל):</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">שם המחבר להוספה:</label>
                         <input type="text" value={splitAuthor} onChange={e => setSplitAuthor(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">שם הספר להוספה לכותרת (ברירת מחדל):</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">(שם הספר להוספה (בתחילת שם הקובץ:</label>
                         <input type="text" value={splitBookName} onChange={e => setSplitBookName(e.target.value)} placeholder="לדוגמה: יד דוד על..." className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                     </div>
                     
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                       <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <AlertCircle size={14} /> סנן כותרות (החרג אם מכיל):
+                        <AlertCircle size={14} /> סנן והחרג אם מכיל...):
                       </label>
                       <input 
                         type="text" 
@@ -761,10 +761,10 @@ const App: React.FC = () => {
             {activeTab === 'fix' && (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-300">
                 <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
-                  <Scale className="text-blue-500" /> נירמול היררכיה (Normalization)
+                  <Scale className="text-blue-500" /> נירמול היררכיה
                 </h3>
                 <div className="p-6 bg-blue-50 border border-blue-100 rounded-2xl mb-6">
-                  <span className="text-sm font-bold text-blue-800 block mb-4">החרג רמות (לא ישתתפו בסידור מחדש):</span>
+                  <span className="text-sm font-bold text-blue-800 block mb-4">דלג רמות:</span>
                   <div className="flex gap-6">
                     {['h1', 'h2', 'h3'].map(h => (
                       <label key={h} className="flex items-center gap-3 cursor-pointer group">
@@ -779,6 +779,7 @@ const App: React.FC = () => {
                     ))}
                   </div>
                   <p className="mt-4 text-xs text-blue-600 font-medium">* הנירמול יסדר מחדש את כל הכותרות הנותרות לרצף לוגי (h1, h2, h3...)</p>
+                  <p className="mt-2 text-xs text-red-600 font-medium">** שים לב הדילוג נועד לצורך הוספת כותרות ידנית בקובץ הסופי אין לדלג על כותרות!</p>
                 </div>
                 <button onClick={applyFixHierarchy} className="w-full py-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all shadow-lg">בצע נירמול</button>
               </div>
