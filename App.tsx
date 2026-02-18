@@ -75,24 +75,27 @@ const App: React.FC = () => {
     const previousState = history[0];
     setHistory(prev => prev.slice(1));
     setLoadedFiles(previousState);
-    addLog("פעולה אחרונה בוטלה.", 'info');
+    addLog("פעולה אחרונה בוטלה. הקבצים הוחזרו למצב קודם.", 'info');
   };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
     pushToHistory();
     const newFiles: ProcessedFile[] = [];
+    const names: string[] = [];
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const content = await f.text();
+      const cleanFileName = f.name.replace(/\.[^/.]+$/, "");
       newFiles.push({ 
-        name: f.name.replace(/\.[^/.]+$/, ""), 
+        name: cleanFileName, 
         content: content,
         originalName: f.name
       });
+      names.push(cleanFileName);
     }
     setLoadedFiles(prev => [...prev, ...newFiles]);
-    addLog(`נטענו ${files.length} קבצים.`, 'success');
+    addLog(`נטענו ${files.length} קבצים: ${names.join(', ')}`, 'success');
   };
 
   const checkEx = (text: string, exStr: string) => {
@@ -107,11 +110,13 @@ const App: React.FC = () => {
 
   const applyMerge = () => {
     pushToHistory();
+    let totalMerged = 0;
     setLoadedFiles(prev => prev.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
       let currentSourceText = "";
       let toDel: Element[] = [];
+      let mergedInThisFile = 0;
       
       doc.body.querySelectorAll('*').forEach(el => {
         const tagName = el.tagName.toLowerCase();
@@ -121,6 +126,8 @@ const App: React.FC = () => {
         } else if (tagName === mergeTarget) {
           if (currentSourceText && !checkEx(el.textContent || "", mergeExclude)) {
             el.innerHTML = `${currentSourceText} ${el.innerHTML}`;
+            mergedInThisFile++;
+            totalMerged++;
           }
         }
       });
@@ -135,24 +142,35 @@ const App: React.FC = () => {
       
       return { ...f, content: doc.body.innerHTML };
     }));
-    addLog("חיבור כותרות בוצע.", 'success');
+    addLog(`חיבור כותרות בוצע. סה"כ חוברו ${totalMerged} כותרות מקור (${mergeSrc}) ליעדים (${mergeTarget}).`, 'success');
   };
 
   const applyGlobalReplace = () => {
     if (!globalFind) return;
     pushToHistory();
     const regex = new RegExp(globalFind.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    let totalReplacements = 0;
+    let filesAffected = 0;
+
     setLoadedFiles(prev => prev.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
+      let changedInFile = false;
+      
       doc.body.querySelectorAll('*').forEach(el => {
         if (el.children.length === 0 && el.textContent?.trim() !== "") {
-          el.innerHTML = el.innerHTML.replace(regex, globalReplace);
+          const matches = el.innerHTML.match(regex);
+          if (matches) {
+            totalReplacements += matches.length;
+            el.innerHTML = el.innerHTML.replace(regex, globalReplace);
+            changedInFile = true;
+          }
         }
       });
+      if (changedInFile) filesAffected++;
       return { ...f, content: doc.body.innerHTML };
     }));
-    addLog("החלפה גלובלית בוצעה.", 'success');
+    addLog(`החלפה גלובלית בוצעה. הוחלפו ${totalReplacements} מופעים ב-${filesAffected} קבצים.`, 'success');
   };
 
   const scanHeadersForSplit = () => {
@@ -205,29 +223,32 @@ const App: React.FC = () => {
 
     setHeaderInstructions(instructions);
     setSplitStep('review');
-    addLog(`נסרקו ${instructions.length} נקודות חיתוך פוטנציאליות.`, 'info');
+    addLog(`נסרקו ${instructions.length} נקודות חיתוך פוטנציאליות בכל הקבצים הטעונים.`, 'info');
   };
 
   const applySplit = () => {
     pushToHistory();
     let newFiles: ProcessedFile[] = [];
+    let originalFilesAffected = 0;
 
     if (splitMethod === 'tag' || splitMethod === 'header_text') {
-      loadedFiles.forEach(f => {
+      loadedFiles.forEach((f, fIdx) => {
         const parts = f.content.split(new RegExp(`(<${splitTag}[^>]*>.*?</${splitTag}>)`, 'gi'));
         let currentContent = "";
         let currentTitle = f.name;
         let idx = 0;
+        let splitCountForThisFile = 0;
         
         parts.forEach(part => {
           const isHeader = part.toLowerCase().startsWith(`<${splitTag}`);
           if (isHeader) {
             const text = part.replace(/<[^>]*>/g, '').trim();
-            const instruction = headerInstructions.find(ins => ins.originalText === text);
+            const instruction = headerInstructions.find(ins => ins.id.startsWith(`${fIdx}-`) && ins.originalText === text);
             
             if (instruction && instruction.shouldSplit) {
               if (currentContent.trim()) {
                 newFiles.push({ name: cleanName(currentTitle, idx), content: currentContent.trim() });
+                splitCountForThisFile++;
               }
               const finalTitle = (instruction.addBook ? splitBookName + " " : "") + (text || f.name);
               currentTitle = finalTitle;
@@ -248,7 +269,9 @@ const App: React.FC = () => {
         });
         if (currentContent.trim()) {
           newFiles.push({ name: cleanName(currentTitle, idx), content: currentContent.trim() });
+          splitCountForThisFile++;
         }
+        if (splitCountForThisFile > 1) originalFilesAffected++;
       });
     } else {
       // Split by text pattern
@@ -259,7 +282,7 @@ const App: React.FC = () => {
           return;
         }
 
-        // Sort match positions to split correctly
+        originalFilesAffected++;
         const sortedInstructions = [...fileInstructions].sort((a, b) => (a.matchStart || 0) - (b.matchStart || 0));
         
         let lastPos = 0;
@@ -278,30 +301,38 @@ const App: React.FC = () => {
       });
     }
 
+    const totalCreated = newFiles.length;
     setLoadedFiles(newFiles);
     setSplitStep('setup');
-    addLog(`חיתוך בוצע. נוצרו ${newFiles.length} קבצים.`, 'success');
+    addLog(`חיתוך הושלם. נוצרו ${totalCreated} קבצים חדשים מתוך ${originalFilesAffected} קבצי מקור שחולקו.`, 'success');
   };
 
   const applyReplaceHeaders = () => {
     if (!repFind) return;
     pushToHistory();
     const regex = new RegExp(repFind, 'g');
+    let totalUpdated = 0;
+    
     setLoadedFiles(prev => prev.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
       const selector = repScope === 'all' ? 'h1,h2,h3,h4,h5,h6' : repScope;
       doc.body.querySelectorAll(selector).forEach(el => {
-        el.innerHTML = el.innerHTML.replace(regex, repWith);
+        if (regex.test(el.innerHTML)) {
+          el.innerHTML = el.innerHTML.replace(regex, repWith);
+          totalUpdated++;
+        }
       });
       return { ...f, content: doc.body.innerHTML };
     }));
-    addLog("החלפה בכותרות בוצעה.", 'success');
+    addLog(`החלפה בכותרות הושלמה. עודכנו ${totalUpdated} כותרות בטווח ${repScope}.`, 'success');
   };
 
   const applyFixHierarchy = () => {
     pushToHistory();
     const skipTags = Object.entries(hierSkip).filter(([_, v]) => v).map(([k]) => k);
+    let totalFilesNormalized = 0;
+
     setLoadedFiles(prev => prev.map(f => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(f.content, 'text/html');
@@ -317,17 +348,20 @@ const App: React.FC = () => {
       const map: Record<string, string> = {};
       found.forEach((t, i) => map[t] = 'h' + (i + 1));
       
+      let changedInThisFile = false;
       headers.forEach(h => {
         const oldTag = h.tagName.toLowerCase();
-        if(map[oldTag]) {
+        if(map[oldTag] && map[oldTag] !== oldTag) {
           const newHeader = doc.createElement(map[oldTag]);
           newHeader.innerHTML = h.innerHTML;
           h.replaceWith(newHeader);
+          changedInThisFile = true;
         }
       });
+      if (changedInThisFile) totalFilesNormalized++;
       return { ...f, content: doc.body.innerHTML };
     }));
-    addLog("נירמול היררכיה בוצע.", 'success');
+    addLog(`נירמול היררכיה בוצע ב-${totalFilesNormalized} קבצים. רמות שהוחרגו: ${skipTags.length > 0 ? skipTags.join(', ') : 'ללא'}.`, 'success');
   };
 
   const downloadAll = async () => {
@@ -345,7 +379,7 @@ const App: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    addLog("הקובץ מוכן להורדה.", 'success');
+    addLog(`הורדה החלה: קובץ ZIP מכיל ${loadedFiles.length} קבצים.`, 'success');
   };
 
   const NavButton = ({ id, icon: Icon, label }: { id: TabId, icon: any, label: string }) => (
@@ -397,7 +431,7 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-           <div className="text-xs text-slate-400 text-center">v2.3 - Simplified Filters</div>
+           <div className="text-xs text-slate-400 text-center">v2.4 - Enhanced Logs</div>
         </div>
       </aside>
 
@@ -444,10 +478,12 @@ const App: React.FC = () => {
               </button>
              <button 
                 onClick={() => {
+                  if (loadedFiles.length === 0) return;
                   pushToHistory();
                   setLoadedFiles([]);
                   setHeaderInstructions([]);
                   setSplitStep('setup');
+                  addLog("כל הקבצים וההגדרות נוקו.", "info");
                 }}
                 className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-bold mr-2"
               >
