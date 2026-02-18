@@ -116,7 +116,6 @@ const App: React.FC = () => {
       const doc = parser.parseFromString(f.content, 'text/html');
       let currentSourceText = "";
       let toDel: Element[] = [];
-      let mergedInThisFile = 0;
       
       doc.body.querySelectorAll('*').forEach(el => {
         const tagName = el.tagName.toLowerCase();
@@ -126,7 +125,6 @@ const App: React.FC = () => {
         } else if (tagName === mergeTarget) {
           if (currentSourceText && !checkEx(el.textContent || "", mergeExclude)) {
             el.innerHTML = `${currentSourceText} ${el.innerHTML}`;
-            mergedInThisFile++;
             totalMerged++;
           }
         }
@@ -593,7 +591,7 @@ const App: React.FC = () => {
 
                 {splitStep === 'setup' ? (
                   <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-6">
                       <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">שיטת חיתוך:</label>
                         <select 
@@ -617,7 +615,7 @@ const App: React.FC = () => {
                       )}
 
                       {splitMethod !== 'tag' && (
-                        <div className={splitMethod === 'text_pattern' ? 'md:col-span-2' : ''}>
+                        <div>
                           <label className="block text-sm font-bold text-slate-700 mb-2">
                             {splitMethod === 'header_text' ? 'מילה לחיפוש בתוך הכותרת:' : 'טקסט/ביטוי לחיתוך (בכל הופעה):'}
                           </label>
