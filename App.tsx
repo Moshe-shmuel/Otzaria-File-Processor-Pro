@@ -116,13 +116,22 @@ const App: React.FC = () => {
 
   const scrollToHeader = (headerHtml: string) => {
     if (!textareaRef.current) return;
-    const text = textareaRef.current.value;
+    const textarea = textareaRef.current;
+    const text = textarea.value;
     const index = text.indexOf(headerHtml);
+    
     if (index !== -1) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(index, index + headerHtml.length);
-      const lineIndex = text.substring(0, index).split('\n').length;
-      textareaRef.current.scrollTop = (lineIndex - 3) * 20; 
+      textarea.focus();
+      textarea.setSelectionRange(index, index + headerHtml.length);
+      
+      // חישוב יחסי מדויק לפי גובה הגלילה הממשי (פותר בעיית שורות נשברות)
+      const percentage = index / text.length;
+      const targetScroll = (percentage * textarea.scrollHeight) - (textarea.clientHeight / 2);
+      
+      textarea.scrollTo({
+        top: targetScroll > 0 ? targetScroll : 0,
+        behavior: 'smooth'
+      });
     }
   };
 
