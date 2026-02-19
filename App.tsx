@@ -56,6 +56,7 @@ const App: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
     setLogs(prev => [{
@@ -97,7 +98,6 @@ const App: React.FC = () => {
     addLog(`נטענו ${files.length} קבצים: ${names.join(', ')}`, 'success');
   };
 
-  // --- תוספת לוגיקת עריכה ---
   const handleContentChange = (newContent: string) => {
     const nextFiles = [...loadedFiles];
     if (nextFiles[previewIdx]) {
@@ -113,7 +113,18 @@ const App: React.FC = () => {
       setLoadedFiles(nextFiles);
     }
   };
-  // -------------------------
+
+  const scrollToHeader = (headerHtml: string) => {
+    if (!textareaRef.current) return;
+    const text = textareaRef.current.value;
+    const index = text.indexOf(headerHtml);
+    if (index !== -1) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(index, index + headerHtml.length);
+      const lineIndex = text.substring(0, index).split('\n').length;
+      textareaRef.current.scrollTop = (lineIndex - 3) * 20; 
+    }
+  };
 
   const checkEx = (text: string, exStr: string) => {
     if (!exStr || !exStr.trim()) return false;
@@ -804,13 +815,12 @@ const App: React.FC = () => {
             )}
 
             {activeTab === 'preview' && (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-300">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-300 flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
+                <div className="flex items-center justify-between mb-6 shrink-0">
                   <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                     <Eye className="text-blue-500" /> תצוגה מקדימה ועריכה
                   </h3>
                   <div className="flex items-center gap-4">
-                    {/* תוספת: עריכת שם קובץ */}
                     <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
                       <span className="text-xs font-bold text-slate-500">שם קובץ:</span>
                       <input 
@@ -835,15 +845,45 @@ const App: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                {/* שינוי: החלפת ה-div ב-textarea המאפשר עריכה */}
-                <textarea
-                  value={loadedFiles[previewIdx]?.content || ''}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  onFocus={() => pushToHistory()}
-                  className="w-full bg-slate-50 p-6 rounded-2xl border border-slate-200 min-h-[500px] max-h-[70vh] overflow-auto font-mono text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                  dir="rtl"
-                  placeholder="אין תוכן להצגה או עריכה"
-                />
+
+                <div className="flex gap-6 flex-1 min-h-0">
+                  {/* סרגל ניווט כותרות */}
+                  <aside className="w-64 border border-slate-200 rounded-xl bg-slate-50 overflow-y-auto p-4 flex flex-col gap-1 shrink-0">
+                    <div className="text-xs font-bold text-slate-400 mb-2 border-b border-slate-200 pb-2">ניווט כותרות</div>
+                    {(() => {
+                      const parser = new DOMParser();
+                      const doc = parser.parseFromString(loadedFiles[previewIdx]?.content || '', 'text/html');
+                      const headers = Array.from(doc.querySelectorAll('h1, h2, h3, h4'));
+                      
+                      return headers.length > 0 ? headers.map((h, i) => (
+                        <button
+                          key={i}
+                          onClick={() => scrollToHeader(h.outerHTML)}
+                          className={`text-right text-[11px] p-1.5 rounded hover:bg-white transition-all border-r-2 ${
+                            h.tagName === 'H1' ? 'font-bold border-blue-500 bg-blue-50/50' : 
+                            h.tagName === 'H2' ? 'mr-2 border-blue-300' : 
+                            'mr-4 border-slate-200'
+                          }`}
+                        >
+                          {h.textContent}
+                        </button>
+                      )) : <div className="text-xs text-slate-400 italic">לא נמצאו כותרות</div>;
+                    })()}
+                  </aside>
+
+                  {/* אזור העריכה */}
+                  <div className="flex-1 relative min-h-0 h-full">
+                    <textarea
+                      ref={textareaRef}
+                      value={loadedFiles[previewIdx]?.content || ''}
+                      onChange={(e) => handleContentChange(e.target.value)}
+                      onFocus={() => pushToHistory()}
+                      className="w-full h-full bg-slate-50 p-6 rounded-2xl border border-slate-200 font-mono text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 resize-none overflow-auto"
+                      dir="rtl"
+                      placeholder="אין תוכן להצגה או עריכה"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
