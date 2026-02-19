@@ -115,23 +115,55 @@ const App: React.FC = () => {
   };
 
   const scrollToHeader = (headerHtml: string) => {
-    if (!textareaRef.current) return;
     const textarea = textareaRef.current;
+    if (!textarea) return;
+    
     const text = textarea.value;
     const index = text.indexOf(headerHtml);
     
     if (index !== -1) {
-      textarea.focus();
-      textarea.setSelectionRange(index, index + headerHtml.length);
+      // יצירת אלמנט "מראה" למדידת מיקום פיזי מדויק
+      const style = window.getComputedStyle(textarea);
+      const mirror = document.createElement('div');
       
-      // חישוב יחסי מדויק לפי גובה הגלילה הממשי (פותר בעיית שורות נשברות)
-      const percentage = index / text.length;
-      const targetScroll = (percentage * textarea.scrollHeight) - (textarea.clientHeight / 2);
+      // העתקת כל המאפיינים שמשפיעים על פריסת הטקסט
+      const propsToCopy = [
+        'fontFamily', 'fontSize', 'fontWeight', 'lineHeight',
+        'paddingTop', 'paddingLeft', 'paddingRight', 'paddingBottom',
+        'borderLeftWidth', 'borderRightWidth', 'boxSizing',
+        'wordBreak', 'letterSpacing', 'textTransform'
+      ];
+      propsToCopy.forEach(prop => {
+        (mirror.style as any)[prop] = (style as any)[prop];
+      });
       
+      mirror.style.position = 'absolute';
+      mirror.style.visibility = 'hidden';
+      mirror.style.top = '0';
+      mirror.style.left = '-9999px';
+      mirror.style.width = textarea.clientWidth + 'px'; // שימוש ברוחב התוכן האמיתי
+      mirror.style.whiteSpace = 'pre-wrap';
+      mirror.style.wordWrap = 'break-word';
+
+      // הזרקת הטקסט עד לנקודת המטרה
+      mirror.textContent = text.substring(0, index);
+      const marker = document.createElement('span');
+      marker.textContent = '\u200b'; // תו שקוף לסימון הסוף
+      mirror.appendChild(marker);
+
+      document.body.appendChild(mirror);
+      const topPos = marker.offsetTop;
+      document.body.removeChild(mirror);
+
+      // גלילה למיקום המדויק שנמדד
       textarea.scrollTo({
-        top: targetScroll > 0 ? targetScroll : 0,
+        top: topPos - 40, // השארת מרווח קטן מלמעלה
         behavior: 'smooth'
       });
+
+      // סימון ויזואלי של הטקסט
+      textarea.focus();
+      textarea.setSelectionRange(index, index + headerHtml.length);
     }
   };
 
