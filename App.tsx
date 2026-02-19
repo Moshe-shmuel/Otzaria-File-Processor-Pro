@@ -97,6 +97,24 @@ const App: React.FC = () => {
     addLog(`נטענו ${files.length} קבצים: ${names.join(', ')}`, 'success');
   };
 
+  // --- תוספת לוגיקת עריכה ---
+  const handleContentChange = (newContent: string) => {
+    const nextFiles = [...loadedFiles];
+    if (nextFiles[previewIdx]) {
+      nextFiles[previewIdx] = { ...nextFiles[previewIdx], content: newContent };
+      setLoadedFiles(nextFiles);
+    }
+  };
+
+  const handleNameChange = (newName: string) => {
+    const nextFiles = [...loadedFiles];
+    if (nextFiles[previewIdx]) {
+      nextFiles[previewIdx] = { ...nextFiles[previewIdx], name: newName };
+      setLoadedFiles(nextFiles);
+    }
+  };
+  // -------------------------
+
   const checkEx = (text: string, exStr: string) => {
     if (!exStr || !exStr.trim()) return false;
     const words = exStr.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
@@ -789,9 +807,20 @@ const App: React.FC = () => {
               <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-300">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <Eye className="text-blue-500" /> תצוגה מקדימה
+                    <Eye className="text-blue-500" /> תצוגה מקדימה ועריכה
                   </h3>
                   <div className="flex items-center gap-4">
+                    {/* תוספת: עריכת שם קובץ */}
+                    <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                      <span className="text-xs font-bold text-slate-500">שם קובץ:</span>
+                      <input 
+                        type="text"
+                        value={loadedFiles[previewIdx]?.name || ''}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        onFocus={() => pushToHistory()}
+                        className="bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500 w-48"
+                      />
+                    </div>
                     <label className="text-sm font-bold text-slate-600">בחר קובץ:</label>
                     <select 
                       value={previewIdx} 
@@ -806,9 +835,15 @@ const App: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-h-[500px] max-h-[70vh] overflow-auto whitespace-pre-wrap font-mono text-sm leading-relaxed text-slate-700" dir="rtl">
-                  {loadedFiles[previewIdx]?.content || 'אין תוכן להצגה'}
-                </div>
+                {/* שינוי: החלפת ה-div ב-textarea המאפשר עריכה */}
+                <textarea
+                  value={loadedFiles[previewIdx]?.content || ''}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  onFocus={() => pushToHistory()}
+                  className="w-full bg-slate-50 p-6 rounded-2xl border border-slate-200 min-h-[500px] max-h-[70vh] overflow-auto font-mono text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                  dir="rtl"
+                  placeholder="אין תוכן להצגה או עריכה"
+                />
               </div>
             )}
           </div>
